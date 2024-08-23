@@ -55,7 +55,7 @@ const Login: React.FC = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       setError(null);
-      navigate("/home"); // Redirect to the Home page after successful login
+      navigate("/home");
     } catch (err) {
       setError("Failed to log in. Please check your credentials.");
     }
