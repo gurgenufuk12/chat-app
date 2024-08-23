@@ -1,5 +1,7 @@
 import React from "react";
 import styled from "styled-components";
+import ChatWindow from "../components/ChatWindow";
+import InputBox from "../components/InputBox";
 import Logout from "../components/Logout";
 
 const HomeContainer = styled.div`
@@ -14,15 +16,19 @@ const Title = styled.h1`
   margin-bottom: 10px;
 `;
 
-const Message = styled.p`
-  font-size: 1.2rem;
+const ChatContainer = styled.div`
+  width: 100%;
+  max-width: 800px;
 `;
 
 const Home: React.FC = () => {
   return (
     <HomeContainer>
       <Title>Welcome to the Chat Application!</Title>
-      <Message>You have successfully logged in.</Message>
+      <ChatContainer>
+        <ChatWindow />
+        <InputBox />
+      </ChatContainer>
       <Logout />
     </HomeContainer>
   );
