@@ -43,10 +43,51 @@ const Select = styled.select`
   width: 100%;
 `;
 
+const AutocompleteList = styled.ul`
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  list-style: none;
+  padding: 0;
+`;
+
+const AutocompleteItem = styled.li`
+  padding: 10px;
+  cursor: pointer;
+  &:hover {
+    background-color: #f0f0f0;
+  }
+`;
+
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState("");
   const [showSelect, setShowSelect] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const { currentUser } = useAuth();
+
+  const commonPhrases = [
+    "Hello!",
+    "How are you?",
+    "What's up?",
+    "Good morning",
+    "Good night",
+    "Thank you",
+    "See you later",
+    "Have a great day!",
+    "I love this!",
+    "Can we talk?",
+    "That's awesome",
+    "I don't understand",
+    "Please explain",
+    "What's going on?",
+    "I'm busy right now",
+    "Let's meet up",
+    "I agree",
+    "Sounds good",
+    "I'll get back to you",
+    "Take care",
+  ];
 
   const handleSend = async () => {
     if (message.trim() === "" || !currentUser) return;
@@ -61,6 +102,7 @@ const ChatInput: React.FC = () => {
       });
       setMessage("");
       setShowSelect(false);
+      setSuggestions([]);
     } catch (error) {
       console.error("Error adding message: ", error);
     }
@@ -82,6 +124,7 @@ const ChatInput: React.FC = () => {
         });
         setMessage("");
         setShowSelect(false);
+        setSuggestions([]);
       } catch (error) {
         console.error("Error adding message: ", error);
       }
@@ -97,6 +140,19 @@ const ChatInput: React.FC = () => {
     } else {
       setShowSelect(false);
     }
+    if (value) {
+      const filteredSuggestions = commonPhrases.filter((phrase) =>
+        phrase.toLowerCase().includes(value.toLowerCase())
+      );
+      setSuggestions(filteredSuggestions);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setMessage(suggestion);
+    setSuggestions([]);
   };
 
   return (
@@ -123,6 +179,18 @@ const ChatInput: React.FC = () => {
             <option value="How was your night?">How was your night?</option>
           </Select>
         </SelectContainer>
+      )}
+      {suggestions.length > 0 && (
+        <AutocompleteList>
+          {suggestions.map((suggestion, index) => (
+            <AutocompleteItem
+              key={index}
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              {suggestion}
+            </AutocompleteItem>
+          ))}
+        </AutocompleteList>
       )}
     </InputContainer>
   );
