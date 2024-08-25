@@ -120,7 +120,17 @@ const ChatWindow: React.FC = () => {
                 {message.sender}
               </Sender>
             )}
-            <MessageBox>{message.content}</MessageBox>
+            <MessageBox>
+              {message.content}
+              <span style={{ marginLeft: "auto" }}>
+                {message.createdAt.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: false,
+                })}
+              </span>
+            </MessageBox>
           </MessageStyled>
         ))}
         <div ref={messagesEndRef} />
