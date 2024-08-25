@@ -3,37 +3,65 @@ import styled from "styled-components";
 import { db } from "../firebase/firebaseConfig";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
+import useImagePlaceholder from "../hooks/useImage";
+import SendIcon from "@mui/icons-material/Send";
 
 const InputContainer = styled.div`
-  display: flex;
-  flex-direction: column;
+  position: relative;
   padding: 10px;
-  border-top: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 600px) {
+    padding: 5px;
+  }
 `;
 
 const InputRow = styled.div`
   display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+
+  @media (max-width: 600px) {
+    gap: 5px;
+  }
 `;
 
 const Input = styled.input`
   flex-grow: 1;
   padding: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
+  border-radius: 50px;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  &::placeholder {
+    color: black;
+  }
+  @media (max-width: 600px) {
+    padding: 8px;
+  }
 `;
 
 const SendButton = styled.button`
-  padding: 10px 15px;
+  padding: 10px;
   border: none;
-  background-color: #007bff;
+  background-color: #3dc5b7;
   color: white;
-  border-radius: 4px;
+  border-radius: 100%;
   cursor: pointer;
-  margin-left: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    padding: 8px 12px;
+  }
 `;
 
 const SelectContainer = styled.div`
   margin-top: 10px;
+  width: 100%;
 `;
 
 const Select = styled.select`
@@ -41,23 +69,51 @@ const Select = styled.select`
   border: 1px solid #ccc;
   border-radius: 4px;
   width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 600px) {
+    padding: 8px;
+  }
 `;
 
 const AutocompleteList = styled.ul`
-  margin-top: 10px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: white;
   list-style: none;
-  padding: 0;
+  z-index: 1000;
+  max-height: 150px;
+  overflow-y: auto;
+
+  @media (max-width: 600px) {
+    max-height: 100px;
+  }
 `;
 
 const AutocompleteItem = styled.li`
   padding: 10px;
   cursor: pointer;
+
   &:hover {
     background-color: #f0f0f0;
   }
+
+  @media (max-width: 600px) {
+    padding: 8px;
+  }
+`;
+
+const ImagePlaceholder = styled.img`
+  margin-top: 10px;
+  width: 100px;
+  height: 100px;
+  border-radius: 4px;
 `;
 
 const ChatInput: React.FC = () => {
@@ -65,6 +121,8 @@ const ChatInput: React.FC = () => {
   const [showSelect, setShowSelect] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const { currentUser } = useAuth();
+  const { imagePlaceholder, generateImagePlaceholder, clearPlaceholder } =
+    useImagePlaceholder();
 
   const commonPhrases = [
     "Hello!",
@@ -92,17 +150,19 @@ const ChatInput: React.FC = () => {
   const handleSend = async () => {
     if (message.trim() === "" || !currentUser) return;
 
+    const content = imagePlaceholder ? imagePlaceholder : message;
     const messagesRef = collection(db, "messages");
 
     try {
       await addDoc(messagesRef, {
-        content: message,
+        content,
         sender: currentUser.email,
         createdAt: Timestamp.fromDate(new Date()),
       });
       setMessage("");
       setShowSelect(false);
       setSuggestions([]);
+      clearPlaceholder();
     } catch (error) {
       console.error("Error adding message: ", error);
     }
@@ -140,6 +200,19 @@ const ChatInput: React.FC = () => {
     } else {
       setShowSelect(false);
     }
+
+    if (value.startsWith("/image")) {
+      const parts = value.split(" ");
+      if (parts.length === 2) {
+        const imageNumber = parseInt(parts[1]);
+        if (!isNaN(imageNumber)) {
+          generateImagePlaceholder(imageNumber);
+        }
+      }
+    } else {
+      clearPlaceholder();
+    }
+
     if (value) {
       const filteredSuggestions = commonPhrases.filter((phrase) =>
         phrase.toLowerCase().includes(value.toLowerCase())
@@ -164,7 +237,9 @@ const ChatInput: React.FC = () => {
           onChange={handleInputChange}
           placeholder="Type a message..."
         />
-        <SendButton onClick={handleSend}>Send</SendButton>
+        <SendButton onClick={handleSend}>
+          <SendIcon />
+        </SendButton>
       </InputRow>
       {showSelect && (
         <SelectContainer>
@@ -191,6 +266,9 @@ const ChatInput: React.FC = () => {
             </AutocompleteItem>
           ))}
         </AutocompleteList>
+      )}
+      {imagePlaceholder && (
+        <ImagePlaceholder src={imagePlaceholder} alt="Image preview" />
       )}
     </InputContainer>
   );
