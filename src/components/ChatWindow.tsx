@@ -71,6 +71,7 @@ const Sender = styled.div<{ isCurrentUser: boolean }>`
 const MessageBox = styled.div`
   font-size: 0.8rem;
   display: flex;
+  gap: 10px;
 `;
 
 const ChatWindow: React.FC = () => {
