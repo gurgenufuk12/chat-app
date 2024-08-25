@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
@@ -19,35 +19,55 @@ const ChatContainer = styled.div`
   flex-direction: column;
   height: 80vh;
   width: 100%;
-  max-width: 600px;
   margin: 0 auto;
   border: 1px solid #ccc;
   border-radius: 10px;
   overflow: hidden;
+  background-color: #5c4f81;
+
+  @media (min-width: 768px) {
+    max-width: 80%;
+  }
+
+  @media (min-width: 1024px) {
+    max-width: 60%;
+  }
 `;
 
 const Messages = styled.div`
   flex-grow: 1;
   padding: 10px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  @media (min-width: 768px) {
+    gap: 15px;
+  }
 `;
 
 const MessageStyled = styled.div<{ isCurrentUser: boolean }>`
-  margin-bottom: 10px;
   padding: 10px;
   background-color: ${({ isCurrentUser }) =>
-    isCurrentUser ? "#007BFF" : "#e0e0e0"};
-  color: ${({ isCurrentUser }) => (isCurrentUser ? "white" : "#333")};
+    isCurrentUser ? "#4e426d" : "#efaa86"};
+  color: ${({ isCurrentUser }) => (isCurrentUser ? "white" : "white")};
   border-radius: 10px;
   width: fit-content;
+  align-self: ${({ isCurrentUser }) =>
+    isCurrentUser ? "flex-end" : "flex-start"};
+
+  @media (min-width: 768px) {
+    padding: 15px;
+  }
 `;
 
 const Sender = styled.div<{ isCurrentUser: boolean }>`
   font-weight: bold;
   margin-bottom: 5px;
-  color: ${({ isCurrentUser }: { isCurrentUser: boolean }) =>
-    isCurrentUser ? "white" : "#333"};
+  color: ${({ isCurrentUser }) => (isCurrentUser ? "white" : "white")};
 `;
+
 const MessageBox = styled.div`
   font-size: 0.8rem;
   display: flex;
@@ -57,7 +77,9 @@ const ChatWindow: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser } = useAuth();
   const messages = useSelector((state: RootState) => state.chat.messages);
-  console.log(currentUser?.email);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const messagesRef = collection(db, "messages");
     const q = query(messagesRef, orderBy("createdAt"));
@@ -77,6 +99,12 @@ const ChatWindow: React.FC = () => {
     return () => unsubscribe();
   }, [dispatch]);
 
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   const isCurrentUser = (sender: string) => sender === currentUser?.email;
 
   return (
@@ -87,22 +115,15 @@ const ChatWindow: React.FC = () => {
             key={message.id}
             isCurrentUser={isCurrentUser(message.sender)}
           >
-            <Sender isCurrentUser={isCurrentUser(message.sender)}>
-              {message.sender}
-            </Sender>
-            <MessageBox>
-              {message.content}
-              <span style={{ marginLeft: "auto" }}>
-                {message.createdAt.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: false,
-                })}
-              </span>
-            </MessageBox>
+            {!isCurrentUser(message.sender) && (
+              <Sender isCurrentUser={isCurrentUser(message.sender)}>
+                {message.sender}
+              </Sender>
+            )}
+            <MessageBox>{message.content}</MessageBox>
           </MessageStyled>
         ))}
+        <div ref={messagesEndRef} />
       </Messages>
     </ChatContainer>
   );
