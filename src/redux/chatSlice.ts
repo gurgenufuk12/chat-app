@@ -9,10 +9,12 @@ interface Message {
 
 interface ChatState {
   messages: Message[];
+  channel: string | null;
 }
 
 const initialState: ChatState = {
   messages: [],
+  channel: null,
 };
 
 const chatSlice = createSlice({
@@ -31,8 +33,11 @@ const chatSlice = createSlice({
         createdAt: new Date(action.payload.createdAt),
       });
     },
+    setChannel: (state, action: PayloadAction<string>) => {
+      state.channel = action.payload;
+    },
   },
 });
 
-export const { setMessages, addMessage } = chatSlice.actions;
+export const { setMessages, addMessage, setChannel } = chatSlice.actions;
 export default chatSlice.reducer;
