@@ -9,7 +9,6 @@ const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
 `;
 
 const Title = styled.h1`
@@ -20,9 +19,7 @@ const Title = styled.h1`
 
 const ChatContainer = styled.div`
   width: 100%;
-  max-width: 800px;
 `;
-
 const Home: React.FC = () => {
   const { currentUser } = useAuth();
 

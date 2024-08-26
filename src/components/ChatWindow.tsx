@@ -24,14 +24,6 @@ const ChatContainer = styled.div`
   border-radius: 10px;
   overflow: hidden;
   background-color: #5c4f81;
-
-  @media (min-width: 768px) {
-    max-width: 80%;
-  }
-
-  @media (min-width: 1024px) {
-    max-width: 60%;
-  }
 `;
 
 const Messages = styled.div`
@@ -46,7 +38,6 @@ const Messages = styled.div`
     gap: 15px;
   }
 `;
-
 const MessageStyled = styled.div<{ isCurrentUser: boolean }>`
   padding: 10px;
   background-color: ${({ isCurrentUser }) =>
