@@ -8,15 +8,19 @@ import { setChannel } from "../redux/chatSlice";
 const ChannelsContainer = styled.div`
   display: flex;
   flex-direction: column;
-  width: 200px;
+  width: 300px;
   padding: 10px;
-  border-right: 1px solid #ccc;
+  background-color: #414256;
+  margin-left: 20px;
+  height: 80vh;
+  border-radius: 20px;
 `;
 
 const ChannelItem = styled.div<{ selected: boolean }>`
   padding: 10px;
   cursor: pointer;
-  background-color: ${(props) => (props.selected ? "#A987D5" : "transparent")};
+  color: white;
+  background-color: ${(props) => (props.selected ? "#303141" : "transparent")};
   border-radius: ${(props) => (props.selected ? "10px" : "0")};
 `;
 

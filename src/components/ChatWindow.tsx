@@ -18,12 +18,11 @@ const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 80vh;
-  width: 100%;
   margin: 0 auto;
   border: 1px solid #ccc;
   border-radius: 10px;
   overflow: hidden;
-  background-color: #5c4f81;
+  background-color: #414256;
 `;
 
 const Messages = styled.div<{ isMessagesEmpty: boolean }>`
