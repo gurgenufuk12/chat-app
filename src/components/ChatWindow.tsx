@@ -23,6 +23,7 @@ const ChatContainer = styled.div`
   border-radius: 10px;
   overflow: hidden;
   background-color: #414256;
+  margin-right: 20px;
 `;
 const ChannelTitle = styled.div`
   width: 100%;
