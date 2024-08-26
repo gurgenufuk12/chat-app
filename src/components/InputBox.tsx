@@ -81,7 +81,7 @@ const Select = styled.select`
 
 const AutocompleteList = styled.ul`
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
   margin: 0;
