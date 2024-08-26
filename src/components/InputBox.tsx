@@ -5,6 +5,8 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import useImagePlaceholder from "../hooks/useImage";
 import SendIcon from "@mui/icons-material/Send";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 const InputContainer = styled.div`
   position: relative;
@@ -123,7 +125,7 @@ const ChatInput: React.FC = () => {
   const { currentUser } = useAuth();
   const { imagePlaceholder, generateImagePlaceholder, clearPlaceholder } =
     useImagePlaceholder();
-
+  const currentChannel = useSelector((state: RootState) => state.chat.channel);
   const commonPhrases = [
     "Hello!",
     "How are you?",
@@ -148,10 +150,10 @@ const ChatInput: React.FC = () => {
   ];
 
   const handleSend = async () => {
-    if (message.trim() === "" || !currentUser) return;
+    if (message.trim() === "" || !currentUser || !currentChannel) return;
 
     const content = imagePlaceholder ? imagePlaceholder : message;
-    const messagesRef = collection(db, "messages");
+    const messagesRef = collection(db, "channels", currentChannel, "messages");
 
     try {
       await addDoc(messagesRef, {
