@@ -2,13 +2,15 @@ import React from "react";
 import styled from "styled-components";
 import ChatWindow from "../components/ChatWindow";
 import InputBox from "../components/InputBox";
+import Channels from "../components/Channels";
 import Logout from "../components/Logout";
 import { useAuth } from "../contexts/AuthContext";
 
 const HomeContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  height: 100%;
 `;
 
 const Title = styled.h1`
@@ -25,12 +27,13 @@ const Home: React.FC = () => {
 
   return (
     <HomeContainer>
-      <Title>Welcome {currentUser?.email} to the chat!</Title>
+      {/* <Title>Welcome {currentUser?.email} to the chat!</Title> */}
+      <Channels />
       <ChatContainer>
         <ChatWindow />
         <InputBox />
       </ChatContainer>
-      <Logout />
+      {/* <Logout /> */}
     </HomeContainer>
   );
 };
