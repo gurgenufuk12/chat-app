@@ -24,6 +24,21 @@ const ChatContainer = styled.div`
   overflow: hidden;
   background-color: #414256;
 `;
+const ChannelTitle = styled.div`
+  width: 100%;
+  height: 60px;
+  top: 0;
+  left: 0;
+  background-color: #343543;
+  padding: 10px;
+  border-radius: 10px 10px 0 0;
+  z-index: 100;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+`;
 
 const Messages = styled.div<{ isMessagesEmpty: boolean }>`
   flex-grow: 1;
@@ -115,6 +130,7 @@ const ChatWindow: React.FC = () => {
 
   return (
     <ChatContainer>
+      <ChannelTitle>{currentChannel}</ChannelTitle>
       <Messages isMessagesEmpty={isMessagesEmpty}>
         {messages.length === 0 ? (
           <NoMessages>No messages sent yet</NoMessages>
