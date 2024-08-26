@@ -26,18 +26,22 @@ const ChatContainer = styled.div`
   background-color: #5c4f81;
 `;
 
-const Messages = styled.div`
+const Messages = styled.div<{ isMessagesEmpty: boolean }>`
   flex-grow: 1;
   padding: 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  justify-content: ${({ isMessagesEmpty }) =>
+    isMessagesEmpty ? "center" : "flex-start"};
   gap: 10px;
+  align-items: center;
 
   @media (min-width: 768px) {
     gap: 15px;
   }
 `;
+
 const MessageStyled = styled.div<{ isCurrentUser: boolean }>`
   padding: 10px;
   background-color: ${({ isCurrentUser }) =>
@@ -65,15 +69,25 @@ const MessageBox = styled.div`
   gap: 10px;
 `;
 
+const NoMessages = styled.div`
+  padding: 20px;
+  font-size: 1.5rem;
+  color: white;
+  font-weight: bold;
+`;
+
 const ChatWindow: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser } = useAuth();
   const messages = useSelector((state: RootState) => state.chat.messages);
+  const currentChannel = useSelector((state: RootState) => state.chat.channel);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const messagesRef = collection(db, "messages");
+    if (!currentChannel) return;
+
+    const messagesRef = collection(db, "channels", currentChannel, "messages");
     const q = query(messagesRef, orderBy("createdAt"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const messagesData: Message[] = querySnapshot.docs.map((doc) => {
@@ -89,7 +103,7 @@ const ChatWindow: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [dispatch]);
+  }, [dispatch, currentChannel]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -98,33 +112,38 @@ const ChatWindow: React.FC = () => {
   }, [messages]);
 
   const isCurrentUser = (sender: string) => sender === currentUser?.email;
+  const isMessagesEmpty = messages.length === 0;
 
   return (
     <ChatContainer>
-      <Messages>
-        {messages.map((message) => (
-          <MessageStyled
-            key={message.id}
-            isCurrentUser={isCurrentUser(message.sender)}
-          >
-            {!isCurrentUser(message.sender) && (
-              <Sender isCurrentUser={isCurrentUser(message.sender)}>
-                {message.sender}
-              </Sender>
-            )}
-            <MessageBox>
-              {message.content}
-              <span style={{ marginLeft: "auto" }}>
-                {message.createdAt.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                  hour12: false,
-                })}
-              </span>
-            </MessageBox>
-          </MessageStyled>
-        ))}
+      <Messages isMessagesEmpty={isMessagesEmpty}>
+        {messages.length === 0 ? (
+          <NoMessages>No messages sent yet</NoMessages>
+        ) : (
+          messages.map((message) => (
+            <MessageStyled
+              key={message.id}
+              isCurrentUser={isCurrentUser(message.sender)}
+            >
+              {!isCurrentUser(message.sender) && (
+                <Sender isCurrentUser={isCurrentUser(message.sender)}>
+                  {message.sender}
+                </Sender>
+              )}
+              <MessageBox>
+                {message.content}
+                <span style={{ marginLeft: "auto" }}>
+                  {message.createdAt.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false,
+                  })}
+                </span>
+              </MessageBox>
+            </MessageStyled>
+          ))
+        )}
         <div ref={messagesEndRef} />
       </Messages>
     </ChatContainer>
