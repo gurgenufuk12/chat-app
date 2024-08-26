@@ -7,6 +7,7 @@ import useImagePlaceholder from "../hooks/useImage";
 import SendIcon from "@mui/icons-material/Send";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
+import Close from "@mui/icons-material/Close";
 
 const InputContainer = styled.div`
   position: relative;
@@ -117,10 +118,36 @@ const ImagePlaceholder = styled.img`
   height: 100px;
   border-radius: 4px;
 `;
-
+const Error = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 200px;
+  padding: 20px;
+  color: white;
+  background-color: #353647;
+  border-radius: 10px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+const Button = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: white;
+`;
 const ChatInput: React.FC = () => {
   const [message, setMessage] = useState("");
   const [showSelect, setShowSelect] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const { currentUser } = useAuth();
   const { imagePlaceholder, generateImagePlaceholder, clearPlaceholder } =
@@ -150,6 +177,9 @@ const ChatInput: React.FC = () => {
   ];
 
   const handleSend = async () => {
+    if (!currentChannel) {
+      setShowError(true);
+    }
     if (message.trim() === "" || !currentUser || !currentChannel) return;
 
     const content = imagePlaceholder ? imagePlaceholder : message;
@@ -271,6 +301,17 @@ const ChatInput: React.FC = () => {
       )}
       {imagePlaceholder && (
         <ImagePlaceholder src={imagePlaceholder} alt="Image preview" />
+      )}
+      {showError && (
+        <Error>
+          <div>
+            <h2>Error</h2>
+            <p>Please select a channel to send a message</p>
+          </div>
+          <Button onClick={() => setShowError(false)}>
+            <Close />
+          </Button>
+        </Error>
       )}
     </InputContainer>
   );
