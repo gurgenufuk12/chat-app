@@ -22,8 +22,6 @@ This project is a fully responsive, single-page chat application built using Rea
 2. Install the dependencies:
     ```bash
     npm install
-    # or
-    yarn install
     ```
 
 3. Set up Firebase:
