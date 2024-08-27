@@ -80,3 +80,4 @@ This project is a fully responsive, single-page chat application built using Rea
 - **Performance Optimization**: Implementing lazy loading for channels and messages could further optimize performance, especially for large datasets.
 - **Accessibility Enhancements**: Improving keyboard navigation, screen reader support, and color contrast would make the application more inclusive.
 
+6. Application is active you can see it from `https://chat-app-gamma-pearl-68.vercel.app/`.
