@@ -1,1 +1,1 @@
-import 'text-encoding'; // Polyfill for TextDecoder and TextEncoder
+import 'text-encoding';

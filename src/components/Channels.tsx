@@ -15,17 +15,74 @@ import { setChannel } from "../redux/chatSlice";
 import Close from "@mui/icons-material/Close";
 import Delete from "@mui/icons-material/Delete";
 
-const ChannelsContainer = styled.div`
+const SliderButton = styled.button<{ isOpen: boolean }>`
+  background-color: #414256;
+  color: white;
+  border: none;
+  width: 80px;
+  height: 40px;
+  cursor: pointer;
+  position: fixed;
+  top: ${({ isOpen }) => (isOpen ? "0" : "0%")};
+  left: ${({ isOpen }) => (isOpen ? "" : "0")};
+  z-index: 1000;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+const SliderCLoseButton = styled.button<{ isOpen: Boolean }>`
+  position: fixed;
+  top: 10px;
+  left: 250px;
+  background-color: #3dc5b7;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  z-index: 1000;
+  display: ${({ isOpen }) => (isOpen ? "block" : "none")};
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+const ChannelsContainer = styled.div<{ isOpen: boolean }>`
   display: flex;
   flex-direction: column;
-  width: 300px;
-  padding: 10px;
+  width: ${({ isOpen }) => (isOpen ? "80%" : "0")};
+  max-width: 300px;
+  padding: ${({ isOpen }) => (isOpen ? "10px" : "0")};
   background-color: #414256;
-  margin-left: 20px;
-  height: 80vh;
-  border-radius: 20px;
-`;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: all 0.3s ease;
+  padding-top: 50px;
+  z-index: 200;
+  overflow: hidden;
 
+  @media (min-width: 768px) {
+    width: 300px;
+    position: relative;
+    height: 80vh;
+    border-radius: 20px;
+    margin-left: 20px;
+
+  }
+`;
+const ChannelText = styled.h2`
+  color: white;
+  text-align: center;
+  font-size: 1.5rem;
+  @media (max-width: 768px) {
+  font-size: 1rem;
+
+  }
+`;
 const ChannelItem = styled.div<{ selected: boolean }>`
   display: flex;
   flex-direction: row;
@@ -47,13 +104,15 @@ const ChannelButton = styled.button`
   cursor: pointer;
   align-self: center;
 `;
-const DeletChanneleButton = styled.button`
+
+const DeleteChannelButton = styled.button`
   background-color: transparent;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 `;
+
 const AddChannelPopup = styled.div`
   position: absolute;
   width: 300px;
@@ -78,6 +137,7 @@ const Input = styled.input`
   background-color: #414256;
   color: white;
 `;
+
 const CloseButton = styled.button`
   position: absolute;
   top: 10px;
@@ -87,6 +147,7 @@ const CloseButton = styled.button`
   cursor: pointer;
   color: white;
 `;
+
 const DeleteChannelPopup = styled.div`
   position: absolute;
   width: 300px;
@@ -103,12 +164,14 @@ const DeleteChannelPopup = styled.div`
   gap: 10px;
   justify-content: center;
 `;
+
 const Channels: React.FC = () => {
   const [channels, setChannels] = useState<string[]>([]);
   const [deletePopup, setDeletePopup] = useState(false);
   const [channelName, setChannelName] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -125,10 +188,13 @@ const Channels: React.FC = () => {
   const handleChannelClick = (channel: string) => {
     setSelectedChannel(channel);
     dispatch(setChannel(channel));
+    setIsOpen(false);
   };
+
   const openPopup = () => {
     setShowPopup(true);
   };
+
   const handleAddChannel = async () => {
     if (channelName) {
       const channelsRef = collection(db, "channels");
@@ -136,6 +202,7 @@ const Channels: React.FC = () => {
       setChannels((prev) => [...prev, channelName]);
     }
   };
+
   const handleDeleteChannel = async (channel: string) => {
     if (!channel) return;
 
@@ -154,69 +221,81 @@ const Channels: React.FC = () => {
       console.error("Error deleting channel: ", error);
     }
   };
+
   return (
-    <ChannelsContainer>
-      {channels.map((channel) => (
-        <ChannelItem
-          key={channel}
-          selected={channel === selectedChannel}
-          onClick={() => handleChannelClick(channel)}
-        >
-          {channel}
-          <DeletChanneleButton
-            onClick={() => {
-              setDeletePopup(true);
-            }}
-          >
-            <Delete />
-          </DeletChanneleButton>
-          {deletePopup && (
-            <DeleteChannelPopup>
-              <h2>Are you sure you want to delete this channel?</h2>
-              <ChannelButton
-                onClick={() => {
-                  handleDeleteChannel(channel);
-                  setDeletePopup(false);
-                }}
-              >
-                Yes
-              </ChannelButton>
-              <ChannelButton onClick={() => setDeletePopup(false)}>
-                No
-              </ChannelButton>
-            </DeleteChannelPopup>
-          )}
-        </ChannelItem>
-      ))}
-      <ChannelButton onClick={openPopup}>Add Channel</ChannelButton>
-      {showPopup && (
-        <AddChannelPopup>
-          <Input
-            type="text"
-            value={channelName}
-            placeholder="Enter channel name"
-            onChange={(e) => setChannelName(e.target.value)}
-          />
-          <ChannelButton
-            onClick={() => {
-              handleAddChannel();
-              setShowPopup(false);
-              setChannelName("");
-            }}
-          >
-            Add Channel
-          </ChannelButton>
-          <CloseButton
-            onClick={() => {
-              setShowPopup(false);
-              setChannelName("");
-            }}
-          >
-            <Close />
-          </CloseButton>
-        </AddChannelPopup>
+    <>
+      {isOpen ? null : (
+        <SliderButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)}>
+          <ChannelText>Channels</ChannelText>
+        </SliderButton>
       )}
-    </ChannelsContainer>
+      <SliderCLoseButton isOpen={isOpen} onClick={() => setIsOpen(!isOpen)}>
+        <Close />
+      </SliderCLoseButton>
+      <ChannelsContainer isOpen={isOpen}>
+        <ChannelText>Channels</ChannelText>
+        {channels.map((channel) => (
+          <ChannelItem
+            key={channel}
+            selected={channel === selectedChannel}
+            onClick={() => handleChannelClick(channel)}
+          >
+            {channel}
+            <DeleteChannelButton
+              onClick={() => {
+                setDeletePopup(true);
+              }}
+            >
+              <Delete />
+            </DeleteChannelButton>
+            {deletePopup && (
+              <DeleteChannelPopup>
+                <h2>Are you sure you want to delete this channel?</h2>
+                <ChannelButton
+                  onClick={() => {
+                    handleDeleteChannel(channel);
+                    setDeletePopup(false);
+                  }}
+                >
+                  Yes
+                </ChannelButton>
+                <ChannelButton onClick={() => setDeletePopup(false)}>
+                  No
+                </ChannelButton>
+              </DeleteChannelPopup>
+            )}
+          </ChannelItem>
+        ))}
+        <ChannelButton onClick={openPopup}>Add Channel</ChannelButton>
+        {showPopup && (
+          <AddChannelPopup>
+            <Input
+              type="text"
+              value={channelName}
+              placeholder="Enter channel name"
+              onChange={(e) => setChannelName(e.target.value)}
+            />
+            <ChannelButton
+              onClick={() => {
+                handleAddChannel();
+                setShowPopup(false);
+                setChannelName("");
+              }}
+            >
+              Add Channel
+            </ChannelButton>
+            <CloseButton
+              onClick={() => {
+                setShowPopup(false);
+                setChannelName("");
+              }}
+            >
+              <Close />
+            </CloseButton>
+          </AddChannelPopup>
+        )}
+      </ChannelsContainer>
+    </>
   );
 };
 

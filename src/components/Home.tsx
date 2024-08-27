@@ -3,8 +3,6 @@ import { styled, createGlobalStyle } from "styled-components";
 import ChatWindow from "../components/ChatWindow";
 import InputBox from "../components/InputBox";
 import Channels from "../components/Channels";
-import Logout from "../components/Logout";
-import { useAuth } from "../contexts/AuthContext";
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -18,7 +16,7 @@ const GlobalStyle = createGlobalStyle`
     width: 100%;
     overflow-x: hidden;
   }
-    body {
+  body {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -36,8 +34,9 @@ const HomeContainer = styled.div`
 `;
 
 const ChatContainer = styled.div`
-  width: 100%;
+  flex-grow: 1;
   height: 100%;
+  overflow: hidden; /* Ensure it doesn't overflow */
 `;
 
 const Home: React.FC = () => {
