@@ -205,8 +205,13 @@ const ChatInput: React.FC = () => {
   ) => {
     const selectedOption = event.target.value;
 
-    if (selectedOption && currentUser) {
-      const messagesRef = collection(db, "messages");
+    if (selectedOption && currentUser && currentChannel) {
+      const messagesRef = collection(
+        db,
+        "channels",
+        currentChannel,
+        "messages"
+      );
 
       try {
         await addDoc(messagesRef, {
