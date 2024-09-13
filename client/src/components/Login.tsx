@@ -1,10 +1,12 @@
+// src/components/Login.tsx
 import React, { useState } from "react";
 import styled from "styled-components";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/firebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebaseConfig";
+import axios from "axios";
 
-const RegisterContainer = styled.div`
+const LoginContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -33,30 +35,42 @@ const Button = styled.button`
     background-color: #0056b3;
   }
 `;
+const ButtonContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+`;
 
 const ErrorMessage = styled.p`
   color: red;
   margin-top: 10px;
 `;
-const Register: React.FC = () => {
+
+const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
+  const handleLogin = async () => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       setError(null);
-      navigate("/home");
+
+      try {
+        await axios.get(`http://localhost:8080/api/getUserByEmail/${email}`);
+        navigate("/home");
+      } catch (err) {
+        navigate("/userInfo");
+      }
     } catch (err) {
-      setError("Failed to register. Please try again.");
+      setError("Failed to log in. Please check your credentials.");
     }
   };
 
   return (
-    <RegisterContainer>
-      <h2>Register</h2>
+    <LoginContainer>
+      <h2>Login</h2>
       <Input
         type="email"
         value={email}
@@ -69,10 +83,14 @@ const Register: React.FC = () => {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
       />
-      <Button onClick={handleRegister}>Register</Button>
+      <ButtonContainer>
+        <Button onClick={handleLogin}>Login</Button>
+        <Button onClick={() => navigate("/register")}>Register</Button>
+      </ButtonContainer>
+
       {error && <ErrorMessage>{error}</ErrorMessage>}
-    </RegisterContainer>
+    </LoginContainer>
   );
 };
 
-export default Register;
+export default Login;

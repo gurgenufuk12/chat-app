@@ -1,11 +1,10 @@
-// src/components/Login.tsx
 import React, { useState } from "react";
 import styled from "styled-components";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
+import { useNavigate } from "react-router-dom";
 
-const LoginContainer = styled.div`
+const RegisterContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -34,36 +33,30 @@ const Button = styled.button`
     background-color: #0056b3;
   }
 `;
-const ButtonContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-`;
 
 const ErrorMessage = styled.p`
   color: red;
   margin-top: 10px;
 `;
-
-const Login: React.FC = () => {
+const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(auth, email, password);
       setError(null);
-      navigate("/home");
+      navigate("/");
     } catch (err) {
-      setError("Failed to log in. Please check your credentials.");
+      setError("Failed to register. Please try again.");
     }
   };
 
   return (
-    <LoginContainer>
-      <h2>Login</h2>
+    <RegisterContainer>
+      <h2>Register</h2>
       <Input
         type="email"
         value={email}
@@ -76,14 +69,10 @@ const Login: React.FC = () => {
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
       />
-      <ButtonContainer>
-        <Button onClick={handleLogin}>Login</Button>
-        <Button onClick={() => navigate("/register")}>Register</Button>
-      </ButtonContainer>
-
+      <Button onClick={handleRegister}>Register</Button>
       {error && <ErrorMessage>{error}</ErrorMessage>}
-    </LoginContainer>
+    </RegisterContainer>
   );
 };
 
-export default Login;
+export default Register;
