@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import styled from "styled-components";
 import {
   collection,
@@ -51,6 +52,7 @@ const SliderCLoseButton = styled.button<{ isOpen: Boolean }>`
 `;
 const ChannelsContainer = styled.div<{ isOpen: boolean }>`
   display: flex;
+  position: relative;
   flex-direction: column;
   width: ${({ isOpen }) => (isOpen ? "80%" : "0")};
   max-width: 300px;
@@ -71,7 +73,6 @@ const ChannelsContainer = styled.div<{ isOpen: boolean }>`
     height: 80vh;
     border-radius: 20px;
     margin-left: 20px;
-
   }
 `;
 const ChannelText = styled.h2`
@@ -79,8 +80,7 @@ const ChannelText = styled.h2`
   text-align: center;
   font-size: 1.5rem;
   @media (max-width: 768px) {
-  font-size: 1rem;
-
+    font-size: 1rem;
   }
 `;
 const ChannelItem = styled.div<{ selected: boolean }>`
@@ -176,10 +176,14 @@ const Channels: React.FC = () => {
 
   useEffect(() => {
     const fetchChannels = async () => {
-      const channelsRef = collection(db, "channels");
-      const channelsSnapshot = await getDocs(channelsRef);
-      const channelsList = channelsSnapshot.docs.map((doc) => doc.data().name);
-      setChannels(channelsList);
+      await axios
+        .get("http://localhost:8080/channel/getChannels")
+        .then((response) => {
+          setChannels(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching channels: ", error);
+        });
     };
 
     fetchChannels();
@@ -196,10 +200,16 @@ const Channels: React.FC = () => {
   };
 
   const handleAddChannel = async () => {
-    if (channelName) {
-      const channelsRef = collection(db, "channels");
-      await addDoc(channelsRef, { name: channelName });
-      setChannels((prev) => [...prev, channelName]);
+    if (!channelName) return;
+    else {
+      try {
+        await axios.post("http://localhost:8080/channel/createChannel", {
+          channelName: channelName,
+        });
+        setChannels((prev) => [...prev, channelName]);
+      } catch (error) {
+        console.error("Error adding channel: ", error);
+      }
     }
   };
 

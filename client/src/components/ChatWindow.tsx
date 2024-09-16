@@ -1,7 +1,15 @@
 import React, { useEffect, useRef } from "react";
+import axios from "axios";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  Timestamp,
+  doc,
+} from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { setMessages } from "../redux/chatSlice";
 import { RootState } from "../redux/store";
@@ -27,11 +35,11 @@ const ChatContainer = styled.div`
 
   @media (max-width: 768px) {
     width: 90%;
-    
+
     height: 70vh;
     display: flex;
     flex-direction: column;
-    margin-top: 100px; 
+    margin-top: 100px;
   }
 `;
 
@@ -106,26 +114,45 @@ const ChatWindow: React.FC = () => {
   const { currentUser } = useAuth();
   const messages = useSelector((state: RootState) => state.chat.messages);
   const currentChannel = useSelector((state: RootState) => state.chat.channel);
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!currentChannel) return;
+    const channelDocRef = doc(db, "channels", currentChannel);
 
-    const messagesRef = collection(db, "channels", currentChannel, "messages");
-    const q = query(messagesRef, orderBy("createdAt"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const messagesData: Message[] = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          content: data.content,
-          sender: data.sender,
-          createdAt: data.createdAt.toDate(),
-        };
-      });
-      dispatch(setMessages(messagesData));
-    });
+    const unsubscribe = onSnapshot(
+      channelDocRef,
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const channelData = docSnapshot.data();
+
+          if (channelData && channelData.messages) {
+            const messagesData: Message[] = channelData.messages.map(
+              (message: any) => ({
+                id: message.id || "",
+                content: message.content,
+                sender: message.sender,
+                createdAt: message.createdAt
+                  ? message.createdAt.toDate
+                    ? message.createdAt.toDate()
+                    : new Date(message.createdAt)
+                  : new Date(),
+              })
+            );
+
+            dispatch(setMessages(messagesData));
+          } else {
+            dispatch(setMessages([]));
+          }
+        } else {
+          console.log("Channel not found.");
+          dispatch(setMessages([]));
+        }
+      },
+      (error) => {
+        console.error("Error fetching channel:", error);
+      }
+    );
 
     return () => unsubscribe();
   }, [dispatch, currentChannel]);

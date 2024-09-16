@@ -1,7 +1,15 @@
 import React, { useState } from "react";
+import axios from "axios";
 import styled from "styled-components";
 import { db } from "../firebase/firebaseConfig";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  Timestamp,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import useImagePlaceholder from "../hooks/useImage";
 import SendIcon from "@mui/icons-material/Send";
@@ -179,18 +187,20 @@ const ChatInput: React.FC = () => {
   const handleSend = async () => {
     if (!currentChannel) {
       setShowError(true);
+      return;
     }
-    if (message.trim() === "" || !currentUser || !currentChannel) return;
 
+    if (message.trim() === "" || !currentUser || !currentChannel) return;
     const content = imagePlaceholder ? imagePlaceholder : message;
-    const messagesRef = collection(db, "channels", currentChannel, "messages");
 
     try {
-      await addDoc(messagesRef, {
-        content,
+      await axios.post("http://localhost:8080/channel/addMessageToChannel", {
+        channelId: currentChannel,
         sender: currentUser.email,
-        createdAt: Timestamp.fromDate(new Date()),
+        content: content,
+        createdAt: new Date(),
       });
+
       setMessage("");
       setShowSelect(false);
       setSuggestions([]);
