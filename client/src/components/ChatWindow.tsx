@@ -11,6 +11,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
+import ChatInput from "./InputBox";
 import { setMessages } from "../redux/chatSlice";
 import { RootState } from "../redux/store";
 import { useAuth } from "../contexts/AuthContext";
@@ -25,7 +26,7 @@ interface Message {
 const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 80vh;
+  height: 100vh;
   margin: 0 auto;
   border: 1px solid #ccc;
   border-radius: 10px;
@@ -199,6 +200,7 @@ const ChatWindow: React.FC = () => {
         )}
         <div ref={messagesEndRef} />
       </Messages>
+      <ChatInput />
     </ChatContainer>
   );
 };

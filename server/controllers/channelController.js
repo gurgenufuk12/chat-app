@@ -6,7 +6,7 @@ const db = firebase.collection("channels");
 
 const createChannel = async (req, res) => {
   try {
-    const { channelName, ...otherData } = req.body;
+    const { channelName, owner, ...otherData } = req.body;
     console.log("channelName", channelName);
 
     if (
@@ -21,7 +21,9 @@ const createChannel = async (req, res) => {
 
     await channelRef.set({
       channelName: channelName.trim(),
+      owner: owner,
       ...otherData,
+      rooms: [],
       messages: [],
       users: [],
     });
@@ -29,6 +31,23 @@ const createChannel = async (req, res) => {
     res.send("Channel created successfully");
   } catch (error) {
     console.error("Error creating channel:", error);
+    res.status(400).send(error.message);
+  }
+};
+const deleteChannel = async (req, res) => {
+  try {
+    const { channelName } = req.body;
+
+    if (!channelName || typeof channelName !== "string") {
+      return res.status(400).send("Invalid channel name");
+    }
+
+    const channelRef = db.doc(channelName);
+    await channelRef.delete();
+
+    res.send("Channel deleted successfully");
+  } catch (error) {
+    console.error("Error deleting channel:", error);
     res.status(400).send(error.message);
   }
 };
@@ -53,29 +72,6 @@ const addMessageToChannel = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
-
-const getMessagesFromChannel = async (req, res) => {
-  try {
-    const { channelName } = req.params;
-
-    const querySnapshot = await db
-      .where("channelName", "==", channelName)
-      .get();
-
-    if (querySnapshot.empty) {
-      return res.status(404).send("Channel not found");
-    }
-
-    const channelDoc = querySnapshot.docs[0];
-    const channelData = channelDoc.data();
-
-    res.status(200).send(channelData.messages || []);
-  } catch (error) {
-    console.error("Error getting messages from channel:", error);
-    res.status(400).send(error.message);
-  }
-};
-
 const getChannels = async (req, res) => {
   const channelNames = [];
   const querySnapshot = await db.get();
@@ -87,6 +83,6 @@ const getChannels = async (req, res) => {
 module.exports = {
   createChannel,
   addMessageToChannel,
-  getMessagesFromChannel,
   getChannels,
+  deleteChannel,
 };
