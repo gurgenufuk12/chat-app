@@ -4,6 +4,8 @@ import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { setRoom, addRoom } from "../redux/chatSlice";
+import { db } from "../firebase/firebaseConfig";
+import { onSnapshot, doc } from "firebase/firestore";
 import Close from "@mui/icons-material/Close";
 
 const RoomsContainer = styled.div`
@@ -138,21 +140,26 @@ const Rooms: React.FC = () => {
     setSelectedRoom(room);
     dispatch(setRoom(room));
   };
+  console.log(currentChannel);
+
   useEffect(() => {
-    const fetchRooms = async () => {
-      if (!currentChannel) return;
+    if (!currentChannel) return;
 
-      try {
-        const response = await axios.get(
-          `http://localhost:8080/channel/getRooms/${currentChannel.channelName}`
-        );
-        setRooms(response.data);
-      } catch (error) {
-        console.log(error);
+    const unsubscribe = onSnapshot(
+      doc(db, "channels", currentChannel.channelName),
+      (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const channelData = docSnapshot.data();
+          const fetchedRooms = channelData.rooms || [];
+          setRooms(fetchedRooms);
+        }
+      },
+      (error) => {
+        console.error("Error fetching rooms: ", error);
       }
-    };
+    );
 
-    fetchRooms();
+    return () => unsubscribe();
   }, [currentChannel]);
 
   const openPopup = () => {
