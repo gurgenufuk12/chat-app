@@ -2,18 +2,11 @@ import React, { useState } from "react";
 import axios from "axios";
 import styled from "styled-components";
 import { db } from "../firebase/firebaseConfig";
-import {
-  collection,
-  addDoc,
-  Timestamp,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
 import useImagePlaceholder from "../hooks/useImage";
 import SendIcon from "@mui/icons-material/Send";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../redux/store";
 import Close from "@mui/icons-material/Close";
 
@@ -153,14 +146,21 @@ const Button = styled.button`
   color: white;
 `;
 const ChatInput: React.FC = () => {
+  const { currentUser } = useAuth();
+  const dispatch = useDispatch();
   const [message, setMessage] = useState("");
   const [showSelect, setShowSelect] = useState(false);
   const [showError, setShowError] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const { currentUser } = useAuth();
   const { imagePlaceholder, generateImagePlaceholder, clearPlaceholder } =
     useImagePlaceholder();
-  const currentChannel = useSelector((state: RootState) => state.chat.channel);
+  const currentChannel = useSelector(
+    (state: RootState) => state.chat.selectedChannel
+  );
+  const currentRoom = useSelector(
+    (state: RootState) => state.chat.selectedRoom
+  );
+
   const commonPhrases = [
     "Hello!",
     "How are you?",
@@ -190,17 +190,23 @@ const ChatInput: React.FC = () => {
       return;
     }
 
-    if (message.trim() === "" || !currentUser || !currentChannel) return;
+    if (
+      message.trim() === "" ||
+      !currentUser ||
+      !currentChannel ||
+      !currentRoom
+    )
+      return;
     const content = imagePlaceholder ? imagePlaceholder : message;
 
     try {
       await axios.post("http://localhost:8080/channel/addMessageToChannel", {
-        channelId: currentChannel,
+        channelId: currentChannel.channelName,
+        roomId: currentRoom.roomName,
         sender: currentUser.email,
         content: content,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
       });
-
       setMessage("");
       setShowSelect(false);
       setSuggestions([]);
@@ -209,7 +215,7 @@ const ChatInput: React.FC = () => {
       console.error("Error adding message: ", error);
     }
   };
-
+  // TODO : Add a new message to the firestore database
   const handleSelectChange = async (
     event: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -219,7 +225,7 @@ const ChatInput: React.FC = () => {
       const messagesRef = collection(
         db,
         "channels",
-        currentChannel,
+        currentChannel.channelName,
         "messages"
       );
 

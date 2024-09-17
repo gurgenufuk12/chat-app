@@ -3,9 +3,11 @@ import axios from "axios";
 import styled from "styled-components";
 import { useDispatch } from "react-redux";
 import { useAuth } from "../contexts/AuthContext";
-import { setChannel } from "../redux/chatSlice";
+import { setChannel, addChannel } from "../redux/chatSlice";
 import Close from "@mui/icons-material/Close";
-import Channel from "../assets/Channel.svg";
+import ChannelPicture from "../assets/ChannelPicture.svg";
+import { db } from "../firebase/firebaseConfig";
+import { onSnapshot, collection } from "firebase/firestore";
 
 const SliderButton = styled.button<{ isOpen: boolean }>`
   background-color: #414256;
@@ -178,42 +180,67 @@ const ContextMenuItem = styled.div`
   }
 `;
 
+interface Message {
+  id: string;
+  content: string;
+  sender: string;
+  createdAt: string;
+}
+
+interface Room {
+  roomName: string;
+  messages: Message[];
+}
+
+interface Channel {
+  channelName: string;
+  owner: string;
+  rooms: Room[];
+  users: string[];
+}
+
 const Channels: React.FC = () => {
   const { currentUser } = useAuth();
-  const [channels, setChannels] = useState<string[]>([]);
+  const [channels, setChannels] = useState<Channel[]>([]);
   const [deletePopup, setDeletePopup] = useState<{
     visible: boolean;
-    channel: string | null;
+    channel: Channel | null;
   }>({ visible: false, channel: null });
   const [channelName, setChannelName] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [selectedChannel, setSelectedChannel] = useState<Channel>(
+    {} as Channel
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
-    channel: string | null;
+    channel: Channel | null;
   }>({ visible: false, x: 0, y: 0, channel: null });
 
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const fetchChannels = async () => {
-      await axios
-        .get("http://localhost:8080/channel/getChannels")
-        .then((response) => {
-          setChannels(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching channels: ", error);
-        });
-    };
+    const unsubscribe = onSnapshot(
+      collection(db, "channels"),
+      (snapshot) => {
+        const fetchedChannels = snapshot.docs.map((doc) => ({
+          ...doc.data(),
+          channelName: doc.id,
+        })) as Channel[];
 
-    fetchChannels();
+        setChannels(fetchedChannels);
+      },
+      (error) => {
+        console.error("Error fetching channels: ", error);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
-  const handleChannelClick = (channel: string) => {
+  const handleChannelClick = (channel: Channel) => {
     setSelectedChannel(channel);
     dispatch(setChannel(channel));
     setIsOpen(false);
@@ -224,35 +251,54 @@ const Channels: React.FC = () => {
   };
 
   const handleAddChannel = async () => {
-    if (!channelName) return;
+    if (!channelName || !currentUser?.email) return;
     try {
       await axios.post("http://localhost:8080/channel/createChannel", {
         channelName: channelName,
-        owner: currentUser?.email,
+        owner: currentUser.email,
       });
-      setChannels((prev) => [...prev, channelName]);
+
+      setChannels((prev) => [
+        ...prev,
+        {
+          channelName: channelName,
+          owner: currentUser.email,
+          rooms: [],
+          users: [],
+        },
+      ]);
+      dispatch(
+        addChannel({
+          channelName: channelName,
+          owner: currentUser.email,
+          rooms: [],
+          users: [],
+        })
+      );
     } catch (error) {
       console.error("Error adding channel: ", error);
     }
   };
 
-  const handleDeleteChannel = async (channel: string) => {
+  const handleDeleteChannel = async (channel: Channel) => {
     if (!channel) return;
 
     try {
       await axios.delete("http://localhost:8080/channel/deleteChannel", {
         data: {
-          channelName: channel,
+          channelName: channel.channelName,
         },
       });
 
-      setChannels((prev) => prev.filter((ch) => ch !== channel));
+      setChannels((prev) =>
+        prev.filter((c) => c.channelName !== channel.channelName)
+      );
     } catch (error) {
       console.error("Error deleting channel: ", error);
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent, channel: string) => {
+  const handleContextMenu = (e: React.MouseEvent, channel: Channel) => {
     e.preventDefault();
     setContextMenu({
       visible: true,
@@ -298,26 +344,27 @@ const Channels: React.FC = () => {
         <Close />
       </SliderCLoseButton>
       <ChannelsContainer isOpen={isOpen}>
-        <ChannelImg src={Channel} alt="channel"></ChannelImg>
+        <ChannelImg src={ChannelPicture} alt="channel"></ChannelImg>
         {channels.map((channel) => (
           <ChannelItem
-            key={channel}
+            key={channel.channelName}
             selected={channel === selectedChannel}
             onClick={() => handleChannelClick(channel)}
             onContextMenu={(e) => handleContextMenu(e, channel)}
           >
-            {channel.charAt(0).toLocaleUpperCase()}
+            {channel.channelName}
           </ChannelItem>
         ))}
         {deletePopup.visible && (
           <DeleteChannelPopup>
             <Question>
-              Are you sure you want to delete this {deletePopup.channel} ?
+              Are you sure you want to delete this{" "}
+              {deletePopup.channel?.channelName} ?
             </Question>
             <div>
               <ChannelButton
                 onClick={() => {
-                  handleDeleteChannel(deletePopup.channel || "");
+                  handleDeleteChannel(deletePopup.channel!);
                   setDeletePopup({ visible: false, channel: null });
                 }}
               >

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,15 +12,24 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import ChatInput from "./InputBox";
-import { setMessages } from "../redux/chatSlice";
 import { RootState } from "../redux/store";
 import { useAuth } from "../contexts/AuthContext";
+
+interface Room {
+  roomName: string;
+  messages: Array<{
+    id?: string;
+    content: string;
+    sender: string;
+    createdAt: any;
+  }>;
+}
 
 interface Message {
   id: string;
   content: string;
   sender: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 const ChatContainer = styled.div`
@@ -113,13 +122,20 @@ const NoMessages = styled.div`
 const ChatWindow: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser } = useAuth();
-  const messages = useSelector((state: RootState) => state.chat.messages);
-  const currentChannel = useSelector((state: RootState) => state.chat.channel);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const currentChannel = useSelector(
+    (state: RootState) => state.chat.selectedChannel
+  );
+  const currentRoom = useSelector(
+    (state: RootState) => state.chat.selectedRoom
+  );
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  console.log("chat window", currentChannel, currentRoom);
 
   useEffect(() => {
-    if (!currentChannel) return;
-    const channelDocRef = doc(db, "channels", currentChannel);
+    if (!currentChannel || !currentRoom) return;
+
+    const channelDocRef = doc(db, "channels", currentChannel.channelName);
 
     const unsubscribe = onSnapshot(
       channelDocRef,
@@ -127,36 +143,42 @@ const ChatWindow: React.FC = () => {
         if (docSnapshot.exists()) {
           const channelData = docSnapshot.data();
 
-          if (channelData && channelData.messages) {
-            const messagesData: Message[] = channelData.messages.map(
-              (message: any) => ({
-                id: message.id || "",
-                content: message.content,
-                sender: message.sender,
-                createdAt: message.createdAt
-                  ? message.createdAt.toDate
-                    ? message.createdAt.toDate()
-                    : new Date(message.createdAt)
-                  : new Date(),
-              })
+          if (channelData && channelData.rooms) {
+            const room = channelData.rooms.find(
+              (room: Room) => room.roomName === currentRoom.roomName
             );
 
-            dispatch(setMessages(messagesData));
+            if (room && room.messages) {
+              const messagesData: Message[] = room.messages.map(
+                (message: Message) => ({
+                  id: message.id || "",
+                  content: message.content,
+                  sender: message.sender,
+                  createdAt: message.createdAt
+                    ? new Date(message.createdAt).toISOString()
+                    : new Date().toISOString(),
+                })
+              );
+              setMessages(messagesData);
+            } else {
+              setMessages([]);
+            }
           } else {
-            dispatch(setMessages([]));
+            setMessages([]);
           }
         } else {
-          console.log("Channel not found.");
-          dispatch(setMessages([]));
+          setMessages([]);
         }
       },
       (error) => {
         console.error("Error fetching channel:", error);
       }
     );
-
     return () => unsubscribe();
-  }, [dispatch, currentChannel]);
+  }, [dispatch, currentChannel, currentRoom]);
+  useEffect(() => {
+    console.log("messages", messages);
+  }, [messages]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -169,37 +191,31 @@ const ChatWindow: React.FC = () => {
 
   return (
     <ChatContainer>
-      <ChannelTitle>{currentChannel}</ChannelTitle>
+      <ChannelTitle>
+        {currentChannel?.channelName}/ {currentRoom?.roomName}
+      </ChannelTitle>
       <Messages isMessagesEmpty={isMessagesEmpty}>
-        {messages.length === 0 ? (
-          <NoMessages>No messages sent yet</NoMessages>
-        ) : (
-          messages.map((message) => (
-            <MessageStyled
-              key={message.id}
-              isCurrentUser={isCurrentUser(message.sender)}
-            >
-              {!isCurrentUser(message.sender) && (
-                <Sender isCurrentUser={isCurrentUser(message.sender)}>
-                  {message.sender}
-                </Sender>
-              )}
-              <MessageBox>
-                {message.content}
-                <span style={{ marginLeft: "auto" }}>
-                  {message.createdAt.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: false,
-                  })}
-                </span>
-              </MessageBox>
-            </MessageStyled>
-          ))
-        )}
+        {messages.map((message: Message) => (
+          <MessageStyled
+            key={message.id}
+            isCurrentUser={isCurrentUser(message.sender)}
+          >
+            {!isCurrentUser(message.sender) && (
+              <Sender isCurrentUser={isCurrentUser(message.sender)}>
+                {message.sender}
+              </Sender>
+            )}
+            <MessageBox>
+              {message.content}
+              <span style={{ marginLeft: "auto" }}>
+                {new Date(message.createdAt).toLocaleTimeString()}
+              </span>
+            </MessageBox>
+          </MessageStyled>
+        ))}
         <div ref={messagesEndRef} />
       </Messages>
+
       <ChatInput />
     </ChatContainer>
   );
