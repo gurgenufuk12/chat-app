@@ -1,41 +1,47 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { auth } from "../firebase/firebaseConfig"; // Adjust import based on your setup
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "../firebase/firebaseConfig";
-import { useDispatch } from "react-redux";
-import { setUser, clearUser } from "../redux/authSlice";
 
-interface AuthContextProps {
-  currentUser: User | null;
+interface AuthContextType {
+  currentUser: { uid: string; email: string } | null;
 }
 
-const AuthContext = createContext<AuthContextProps>({ currentUser: null });
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const dispatch = useDispatch();
+  const [currentUser, setCurrentUser] = useState<{
+    uid: string;
+    email: string;
+  } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
       if (user) {
-        dispatch(setUser(user));
+        setCurrentUser({
+          uid: user.uid,
+          email: user.email || "",
+        });
       } else {
-        dispatch(clearUser());
+        setCurrentUser(null);
       }
     });
 
     return () => unsubscribe();
-  }, [dispatch]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ currentUser }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 };

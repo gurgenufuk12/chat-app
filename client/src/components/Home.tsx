@@ -3,6 +3,7 @@ import { styled, createGlobalStyle } from "styled-components";
 import ChatWindow from "../components/ChatWindow";
 import InputBox from "../components/InputBox";
 import Channels from "../components/Channels";
+import Rooms from "../components/Rooms";
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -43,6 +44,7 @@ const Home: React.FC = () => {
       <GlobalStyle />
       <HomeContainer>
         <Channels />
+        <Rooms />
         <ChatContainer>
           <ChatWindow />
         </ChatContainer>
