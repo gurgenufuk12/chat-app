@@ -6,7 +6,7 @@ const db = firebase.collection("channels");
 
 const createChannel = async (req, res) => {
   try {
-    const { channelName, owner, ...otherData } = req.body;
+    const { channelName, owner, users, ...otherData } = req.body;
 
     if (
       !channelName ||
@@ -24,7 +24,7 @@ const createChannel = async (req, res) => {
       ...otherData,
       rooms: [],
       messages: [],
-      users: [],
+      users: users,
     });
 
     res.send("Channel created successfully");
@@ -94,10 +94,9 @@ const addMessageToChannel = async (req, res) => {
     res.status(400).send(error.message);
   }
 };
-
 const addRoomToChannel = async (req, res) => {
   try {
-    const { channelName, roomName } = req.body;
+    const { channelName, roomName, roomType, roomUsers } = req.body;
 
     if (!channelName || !roomName) {
       return res.status(400).send("Invalid channel or room name");
@@ -108,6 +107,8 @@ const addRoomToChannel = async (req, res) => {
     }
     const room = {
       roomName: roomName,
+      roomType: roomType,
+      roomUsers: roomUsers,
       messages: [],
     };
     const channelRef = db.doc(channelName);
@@ -118,6 +119,37 @@ const addRoomToChannel = async (req, res) => {
     res.send("Room added to the channel successfully");
   } catch (error) {
     console.error("Error adding room to channel:", error);
+    res.status(400).send(error.message);
+  }
+};
+const deleteRoomFromChanel = async (req, res) => {
+  try {
+    const { channelName, roomName } = req.body;
+    if (!channelName || !roomName) {
+      return res.status(400).send("Invalid channel or room name");
+    }
+
+    const channelRef = db.doc(channelName);
+    const channel = await channelRef.get();
+
+    if (!channel.exists) {
+      return res.status(400).send("Channel not found");
+    }
+
+    const rooms = channel.data().rooms;
+    const findIndex = rooms.findIndex((room) => room.roomName === roomName);
+    if (findIndex === -1) {
+      return res.status(400).send("Room not found");
+    }
+
+    rooms.splice(findIndex, 1);
+    await channelRef.update({
+      rooms: rooms,
+    });
+
+    res.send("Room deleted from the channel successfully");
+  } catch (error) {
+    console.error("Error deleting room from channel:", error);
     res.status(400).send(error.message);
   }
 };
@@ -146,11 +178,82 @@ const getRooms = async (req, res) => {
     res.status(500).send(error.message);
   }
 };
+const addUserstoRoom = async (req, res) => {
+  try {
+    const { channelName, roomName, userToAdd } = req.body;
 
+    if (!channelName || !roomName || !userToAdd) {
+      return res.status(400).send("Invalid channel or room name");
+    }
+
+    const channelRef = db.doc(channelName);
+    const channel = await channelRef.get();
+
+    if (!channel.exists) {
+      return res.status(400).send("Channel not found");
+    }
+
+    const rooms = channel.data().rooms;
+    const roomIndex = rooms.findIndex((room) => room.roomName === roomName);
+
+    if (roomIndex === -1) {
+      return res.status(400).send("Room not found");
+    }
+
+    const updatedRooms = rooms.map((room, index) => {
+      if (index === roomIndex) {
+        return {
+          ...room,
+          roomUsers: [...room.roomUsers, userToAdd],
+        };
+      }
+      return room;
+    });
+
+    await channelRef.update({
+      rooms: updatedRooms,
+    });
+    res.send("Users added to the room successfully");
+  } catch (error) {
+    console.error("Error adding users to room:", error);
+    res.status(400).send(error.message);
+  }
+};
+const addUserToChannel = async (req, res) => {
+  try {
+    const { channelName, userToAdd } = req.body;
+
+    if (!channelName || !userToAdd) {
+      return res.status(400).send("Invalid channel or user name");
+    }
+
+    const channelRef = db.doc(channelName);
+    const channel = await channelRef.get();
+
+    if (!channel.exists) {
+      return res.status(400).send("Channel not found");
+    }
+
+    const users = channel.data().users;
+    users.push(userToAdd);
+
+    await channelRef.update({
+      users: users,
+    });
+
+    res.send("User added to the channel successfully");
+  } catch (error) {
+    console.error("Error adding user to channel:", error);
+    res.status(400).send(error.message);
+  }
+};
 module.exports = {
   createChannel,
   addMessageToChannel,
   deleteChannel,
   getRooms,
   addRoomToChannel,
+  deleteRoomFromChanel,
+  addUserstoRoom,
+  addUserToChannel,
 };
