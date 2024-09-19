@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import styled from "styled-components";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../contexts/AuthContext";
 import { setChannel, addChannel } from "../redux/chatSlice";
 import Close from "@mui/icons-material/Close";
 import ChannelPicture from "../assets/ChannelPicture.svg";
 import { db } from "../firebase/firebaseConfig";
 import { onSnapshot, collection } from "firebase/firestore";
+import { RootState } from "../redux/store";
+import AddIcon from "@mui/icons-material/Add";
+import Settings from "./Settings";
 
 const SliderButton = styled.button<{ isOpen: boolean }>`
   background-color: #414256;
@@ -113,7 +116,17 @@ const AddChannelPopup = styled.div`
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  gap: 10px;
   justify-content: center;
+  overflow-y: auto;
+  > div {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+  }
 `;
 const Input = styled.input`
   height: 50px;
@@ -121,7 +134,6 @@ const Input = styled.input`
   width: 100%;
   border: none;
   border-radius: 4px;
-  margin-bottom: 10px;
   background-color: #414256;
   color: white;
   font-family: "Poppins", sans-serif;
@@ -131,6 +143,12 @@ const CloseButton = styled.button`
   position: absolute;
   top: 10px;
   right: 10px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: white;
+`;
+const AddButton = styled.button`
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -161,6 +179,7 @@ const Question = styled.h2`
   color: white;
   font-family: "Poppins", sans-serif;
   font-weight: 200;
+  font-size: 1 rem;
 `;
 const ContextMenu = styled.div`
   position: absolute;
@@ -179,6 +198,17 @@ const ContextMenuItem = styled.div`
     background-color: #3dc5b7;
   }
 `;
+const UserDiv = styled.div`
+  padding: 10px;
+  color: white;
+  border-radius: 5px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+`;
 
 interface Message {
   id: string;
@@ -189,6 +219,8 @@ interface Message {
 
 interface Room {
   roomName: string;
+  roomType: string;
+  roomUsers: string[];
   messages: Message[];
 }
 
@@ -201,8 +233,13 @@ interface Channel {
 
 const Channels: React.FC = () => {
   const { currentUser } = useAuth();
+  const [singleUser, setSingleUser] = useState("");
   const [channels, setChannels] = useState<Channel[]>([]);
   const [deletePopup, setDeletePopup] = useState<{
+    visible: boolean;
+    channel: Channel | null;
+  }>({ visible: false, channel: null });
+  const [settingsPopup, setSettingsPopup] = useState<{
     visible: boolean;
     channel: Channel | null;
   }>({ visible: false, channel: null });
@@ -211,6 +248,11 @@ const Channels: React.FC = () => {
   const [selectedChannel, setSelectedChannel] = useState<Channel>(
     {} as Channel
   );
+  const [channelUsers, setChannelUsers] = useState<string[]>([]);
+  const currentChannel = useSelector(
+    (state: RootState) => state.chat.selectedChannel
+  );
+
   const [isOpen, setIsOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -252,12 +294,13 @@ const Channels: React.FC = () => {
 
   const handleAddChannel = async () => {
     if (!channelName || !currentUser?.email) return;
+    channelUsers.push(currentUser.email);
     try {
       await axios.post("http://localhost:8080/channel/createChannel", {
         channelName: channelName,
         owner: currentUser.email,
+        users: channelUsers,
       });
-
       setChannels((prev) => [
         ...prev,
         {
@@ -332,7 +375,12 @@ const Channels: React.FC = () => {
     }
     closeContextMenu();
   };
-
+  const handleSettingsChannelMenu = () => {
+    if (contextMenu.channel) {
+      setSettingsPopup({ visible: true, channel: contextMenu.channel });
+    }
+    closeContextMenu();
+  };
   return (
     <>
       {isOpen ? null : (
@@ -345,16 +393,18 @@ const Channels: React.FC = () => {
       </SliderCLoseButton>
       <ChannelsContainer isOpen={isOpen}>
         <ChannelImg src={ChannelPicture} alt="channel"></ChannelImg>
-        {channels.map((channel) => (
-          <ChannelItem
-            key={channel.channelName}
-            selected={channel === selectedChannel}
-            onClick={() => handleChannelClick(channel)}
-            onContextMenu={(e) => handleContextMenu(e, channel)}
-          >
-            {channel.channelName}
-          </ChannelItem>
-        ))}
+        {channels
+          .filter((channel) => channel.users.includes(currentUser?.email!))
+          .map((channel) => (
+            <ChannelItem
+              key={channel.channelName}
+              selected={channel.channelName === currentChannel?.channelName}
+              onClick={() => handleChannelClick(channel)}
+              onContextMenu={(e) => handleContextMenu(e, channel)}
+            >
+              {channel.channelName.charAt(0).toUpperCase()}
+            </ChannelItem>
+          ))}
         {deletePopup.visible && (
           <DeleteChannelPopup>
             <Question>
@@ -380,6 +430,14 @@ const Channels: React.FC = () => {
             </div>
           </DeleteChannelPopup>
         )}
+        {settingsPopup.visible && (
+          <Settings
+            propType={settingsPopup.channel!}
+            closeSettings={() =>
+              setSettingsPopup({ visible: false, channel: null })
+            }
+          />
+        )}
         <ChannelButton onClick={openPopup}>Add Channel</ChannelButton>
         {showPopup && (
           <AddChannelPopup>
@@ -389,11 +447,41 @@ const Channels: React.FC = () => {
               placeholder="Enter channel name"
               onChange={(e) => setChannelName(e.target.value)}
             />
+            <div>
+              <Input
+                type="text"
+                value={singleUser}
+                placeholder="Enter channel users"
+                onChange={(e) => setSingleUser(e.target.value)}
+              />
+              <AddButton
+                onClick={() => {
+                  setChannelUsers([...channelUsers, singleUser]);
+                  setSingleUser("");
+                }}
+              >
+                <AddIcon />
+              </AddButton>
+            </div>
+            {channelUsers.length > 0 && <Question>Users:</Question>}
+            {channelUsers.map((user, idx) => (
+              <UserDiv key={idx}>
+                {user}
+                <AddButton
+                  onClick={() =>
+                    setChannelUsers(channelUsers.filter((u) => u !== user))
+                  }
+                >
+                  <Close />
+                </AddButton>
+              </UserDiv>
+            ))}
             <ChannelButton
               onClick={() => {
                 handleAddChannel();
                 setShowPopup(false);
                 setChannelName("");
+                setChannelUsers([]);
               }}
             >
               <Question>Add Channel</Question>
@@ -416,9 +504,16 @@ const Channels: React.FC = () => {
             }}
             onClick={closeContextMenu}
           >
-            <ContextMenuItem onClick={handleDeleteChannelMenu}>
-              Delete
-            </ContextMenuItem>
+            {contextMenu.channel?.owner === currentUser?.email && (
+              <ContextMenuItem onClick={handleDeleteChannelMenu}>
+                Delete
+              </ContextMenuItem>
+            )}
+            {contextMenu.channel?.owner === currentUser?.email && (
+              <ContextMenuItem onClick={handleSettingsChannelMenu}>
+                Settings
+              </ContextMenuItem>
+            )}
           </ContextMenu>
         )}
       </ChannelsContainer>
