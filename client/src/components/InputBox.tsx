@@ -20,7 +20,6 @@ const InputContainer = styled.div`
     padding: 5px;
   }
 `;
-
 const InputRow = styled.div`
   display: flex;
   align-items: center;
@@ -31,7 +30,6 @@ const InputRow = styled.div`
     gap: 5px;
   }
 `;
-
 const Input = styled.input`
   flex-grow: 1;
   padding: 10px;
@@ -47,7 +45,6 @@ const Input = styled.input`
     padding: 8px;
   }
 `;
-
 const SendButton = styled.button`
   padding: 10px;
   border: none;
@@ -62,12 +59,10 @@ const SendButton = styled.button`
     padding: 8px 12px;
   }
 `;
-
 const SelectContainer = styled.div`
   margin-top: 10px;
   width: 100%;
 `;
-
 const Select = styled.select`
   padding: 10px;
   border: 1px solid #ccc;
@@ -79,7 +74,6 @@ const Select = styled.select`
     padding: 8px;
   }
 `;
-
 const AutocompleteList = styled.ul`
   position: absolute;
   bottom: 100%;
@@ -99,7 +93,6 @@ const AutocompleteList = styled.ul`
     max-height: 100px;
   }
 `;
-
 const AutocompleteItem = styled.li`
   padding: 10px;
   cursor: pointer;
@@ -112,7 +105,6 @@ const AutocompleteItem = styled.li`
     padding: 8px;
   }
 `;
-
 const ImagePlaceholder = styled.img`
   margin-top: 10px;
   width: 100px;
