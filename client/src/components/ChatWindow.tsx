@@ -64,19 +64,17 @@ const ChannelTitle = styled.div`
   z-index: 100;
   color: white;
   text-align: center;
-  font-weight: bold;
   display: flex;
   align-items: center;
+  font-family: "Poppins", sans-serif;
 `;
 
-const Messages = styled.div<{ isMessagesEmpty: boolean }>`
+const Messages = styled.div`
   flex-grow: 1;
   padding: 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: ${({ isMessagesEmpty }) =>
-    isMessagesEmpty ? "center" : "flex-start"};
   gap: 10px;
   align-items: center;
 
@@ -129,11 +127,10 @@ const ChatWindow: React.FC = () => {
   const currentRoom = useSelector(
     (state: RootState) => state.chat.selectedRoom
   );
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  console.log("chat window", currentChannel, currentRoom);
 
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!currentChannel || !currentRoom) return;
+    if (!currentChannel || !currentRoom) return setMessages([]);
 
     const channelDocRef = doc(db, "channels", currentChannel.channelName);
 
@@ -176,9 +173,6 @@ const ChatWindow: React.FC = () => {
     );
     return () => unsubscribe();
   }, [dispatch, currentChannel, currentRoom]);
-  useEffect(() => {
-    console.log("messages", messages);
-  }, [messages]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -187,14 +181,21 @@ const ChatWindow: React.FC = () => {
   }, [messages]);
 
   const isCurrentUser = (sender: string) => sender === currentUser?.email;
-  const isMessagesEmpty = messages.length === 0;
+  const checkIsThereMessages = () => {
+    if (!currentChannel || !currentRoom) {
+      return (
+        <NoMessages>Select a channel and room to start chatting</NoMessages>
+      );
+    }
+  };
 
   return (
     <ChatContainer>
       <ChannelTitle>
-        {currentChannel?.channelName}/ {currentRoom?.roomName}
+        {currentChannel?.channelName} / {currentRoom?.roomName}
       </ChannelTitle>
-      <Messages isMessagesEmpty={isMessagesEmpty}>
+      <Messages>
+        {checkIsThereMessages()}
         {messages.map((message: Message) => (
           <MessageStyled
             key={message.id}
