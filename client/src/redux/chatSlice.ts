@@ -1,5 +1,4 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { channel } from "diagnostics_channel";
 
 interface Message {
   id: string;
@@ -10,7 +9,9 @@ interface Message {
 
 interface Room {
   roomName: string;
+  roomType: string;
   messages: Message[];
+  roomUsers: string[];
 }
 
 interface Channel {
@@ -51,27 +52,17 @@ const chatSlice = createSlice({
 
       if (channel) {
         channel.rooms.push(action.payload.room);
-        console.log("room added", action.payload.room);
       }
-      // INFO : ADDS A NEW ROOM TO THE STATE
     },
     setChannel: (state, action: PayloadAction<Channel>) => {
       state.selectedChannel = action.payload;
       state.selectedRoom = null;
-      console.log("channel set", action.payload);
-
-      // INFO : SETS CHANNEL WHEN NEW CHANNEL SELECTED
     },
     setRoom: (state, action: PayloadAction<Room>) => {
       state.selectedRoom = action.payload;
-      console.log("room set", action.payload);
-
-      // INFO : SETS ROOM WHEN NEW ROOM SELECTED
     },
     addChannel: (state, action: PayloadAction<Channel>) => {
-      console.log("channel added", action.payload);
       state.channels.push(action.payload);
-      // INFO : ADDS A NEW CHANNEL TO THE STATE
     },
   },
 });
